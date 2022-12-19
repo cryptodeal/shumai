@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 #include "flashlight/fl/autograd/Functions.h"
 #include "flashlight/fl/autograd/tensor/AutogradExtension.h"
 #include "flashlight/fl/autograd/tensor/AutogradOps.h"
@@ -395,6 +396,7 @@ int dtypeFloat32() {
   int dtype = static_cast<int>(fl::dtype::f32);
   return dtype;
 }
+
 int dtypeFloat64() {
   int dtype = static_cast<int>(fl::dtype::f64);
   return dtype;
