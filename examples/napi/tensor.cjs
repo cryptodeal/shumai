@@ -383,6 +383,66 @@ class Tensor {
       this._napi_tensor.conv2d(weights._napi_tensor, sx, sy, px, py, dx, dy, groups)
     )
   }
+
+  amin(axes, keepdims) {
+    return new Tensor(this._napi_tensor.amin(axes, keepdims))
+  }
+
+  amax(axes, keepdims) {
+    return new Tensor(this._napi_tensor.amax(axes, keepdims))
+  }
+
+  argmin(axis, keepdims) {
+    return new Tensor(this._napi_tensor.argmin(axis, keepdims))
+  }
+
+  argmax(axis, keepdims) {
+    return new Tensor(this._napi_tensor.argmax(axis, keepdims))
+  }
+
+  sum(axes, keepdims) {
+    return new Tensor(this._napi_tensor.sum(axes, keepdims))
+  }
+
+  cumsum(axis) {
+    return new Tensor(this._napi_tensor.cumsum(axis))
+  }
+
+  mean(axes, keepdims) {
+    return new Tensor(this._napi_tensor.mean(axes, keepdims))
+  }
+
+  median(axes, keepdims) {
+    return new Tensor(this._napi_tensor.mean(axes, keepdims))
+  }
+
+  _var(axes, bias, keepdims) {
+    return new Tensor(this._napi_tensor._var(axes, bias, keepdims))
+  }
+
+  variance(axes, bias, keepdims) {
+    return new Tensor(this._napi_tensor._var(axes, bias, keepdims))
+  }
+
+  std(axes, keepdims) {
+    return new Tensor(this._napi_tensor.std(axes, keepdims))
+  }
+
+  norm(axes, p, keepdims) {
+    return new Tensor(this._napi_tensor.norm(axes, p, keepdims))
+  }
+
+  countNonzero(axes, keepdims) {
+    return new Tensor(this._napi_tensor.countNonzero(axes, keepdims))
+  }
+
+  any(axes, keepdims) {
+    return new Tensor(this._napi_tensor.any(axes, keepdims))
+  }
+
+  all(axes, keepdims) {
+    return new Tensor(this._napi_tensor.all(axes, keepdims))
+  }
 }
 
 module.exports = { Tensor, dtype }
