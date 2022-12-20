@@ -37,6 +37,9 @@ example.eval()
 console.log(bytesUsed()) // 16
 const test2 = example.reshape([2, 2])
 console.log(test2.shape)
+console.log(test2.dtype)
+const test3 = test2.astype(dtype.Float64)
+console.log(test3.dtype)
 example.dispose()
 console.log(bytesUsed()) // 0
 console.log(dtype.Float32) // 1
@@ -52,3 +55,7 @@ console.log(dtype.Uint16) // 8
 console.log(dtype.Uint32) // 9
 console.log(dtype.Uint64) // 10
 console.log(dtype.BigUint64) // 10
+const test4 = new Tensor(new Float32Array([1, 11, 2, 22, 3, 33, 4, 44])).reshape([2, 4])
+const test5 = test4.transpose([1, 0])
+console.log(test5.shape) // [4, 2]
+console.log(test5.toFloat32Array()) // Float32Array(8) [ 1, 3, 11, 33, 2, 4, 22, 44 ]

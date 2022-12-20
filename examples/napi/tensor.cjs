@@ -149,6 +149,240 @@ class Tensor {
   reshape(shape) {
     return new Tensor(this._napi_tensor.reshape(shape))
   }
+
+  astype(dtype) {
+    return new Tensor(this._napi_tensor.astype(dtype))
+  }
+
+  transpose(axes) {
+    return new Tensor(this._napi_tensor.transpose(axes))
+  }
+
+  tile(shape) {
+    return new Tensor(this._napi_tensor.tile(shape))
+  }
+
+  nonzero() {
+    return new Tensor(this._napi_tensor.nonzero())
+  }
+
+  negative() {
+    return new Tensor(this._napi_tensor.negative())
+  }
+
+  negate() {
+    return new Tensor(this._napi_tensor.negative())
+  }
+
+  logicalNot() {
+    return new Tensor(this._napi_tensor.logicalNot())
+  }
+
+  exp() {
+    return new Tensor(this._napi_tensor.exp())
+  }
+
+  log() {
+    return new Tensor(this._napi_tensor.log())
+  }
+
+  sin() {
+    return new Tensor(this._napi_tensor.sin())
+  }
+
+  cos() {
+    return new Tensor(this._napi_tensor.cos())
+  }
+
+  sqrt() {
+    return new Tensor(this._napi_tensor.sqrt())
+  }
+
+  floor() {
+    return new Tensor(this._napi_tensor.floor())
+  }
+
+  ceil() {
+    return new Tensor(this._napi_tensor.ceil())
+  }
+
+  rint() {
+    return new Tensor(this._napi_tensor.rint())
+  }
+
+  absolute() {
+    return new Tensor(this._napi_tensor.absolute())
+  }
+
+  abs() {
+    return new Tensor(this._napi_tensor.absolute())
+  }
+
+  sigmoid() {
+    return new Tensor(this._napi_tensor.sigmoid())
+  }
+
+  erf() {
+    return new Tensor(this._napi_tensor.erf())
+  }
+
+  flip(dim) {
+    return new Tensor(this._napi_tensor.flip(dim))
+  }
+
+  clip(low, high) {
+    return new Tensor(this._napi_tensor.clip(low._napi_tensor, high._napi_tensor))
+  }
+
+  roll(shift, axis) {
+    return new Tensor(this._napi_tensor.roll(shift, axis))
+  }
+
+  isnan() {
+    return new Tensor(this._napi_tensor.isnan())
+  }
+
+  isinf() {
+    return new Tensor(this._napi_tensor.isinf())
+  }
+
+  sign() {
+    return new Tensor(this._napi_tensor.sign())
+  }
+
+  tril() {
+    return new Tensor(this._napi_tensor.tril())
+  }
+
+  triu() {
+    return new Tensor(this._napi_tensor.triu())
+  }
+
+  where(x, y) {
+    return new Tensor(this._napi_tensor.where(x._napi_tensor, y._napi_tensor))
+  }
+
+  sort(dim) {
+    return new Tensor(this._napi_tensor.sort(dim))
+  }
+
+  add(other) {
+    return new Tensor(this._napi_tensor.add(other._napi_tensor))
+  }
+
+  sub(other) {
+    return new Tensor(this._napi_tensor.add(other._napi_tensor))
+  }
+
+  mul(other) {
+    return new Tensor(this._napi_tensor.mul(other._napi_tensor))
+  }
+
+  div(other) {
+    return new Tensor(this._napi_tensor.div(other._napi_tensor))
+  }
+
+  eq(other) {
+    return new Tensor(this._napi_tensor.eq(other._napi_tensor))
+  }
+
+  neq(other) {
+    return new Tensor(this._napi_tensor.neq(other._napi_tensor))
+  }
+
+  lessThan(other) {
+    return new Tensor(this._napi_tensor.lessThan(other._napi_tensor))
+  }
+
+  lt(other) {
+    return new Tensor(this._napi_tensor.lessThan(other._napi_tensor))
+  }
+
+  lessThanEqual(other) {
+    return new Tensor(this._napi_tensor.lessThanEqual(other._napi_tensor))
+  }
+
+  lte(other) {
+    return new Tensor(this._napi_tensor.lessThanEqual(other._napi_tensor))
+  }
+
+  greaterThan(other) {
+    return new Tensor(this._napi_tensor.greaterThan(other._napi_tensor))
+  }
+
+  gt(other) {
+    return new Tensor(this._napi_tensor.greaterThan(other._napi_tensor))
+  }
+
+  greaterThanEqual(other) {
+    return new Tensor(this._napi_tensor.greaterThanEqual(other._napi_tensor))
+  }
+
+  gte(other) {
+    return new Tensor(this._napi_tensor.greaterThanEqual(other._napi_tensor))
+  }
+
+  logicalOr(other) {
+    return new Tensor(this._napi_tensor.logicalOr(other._napi_tensor))
+  }
+
+  logicalAnd(other) {
+    return new Tensor(this._napi_tensor.logicalAnd(other._napi_tensor))
+  }
+
+  mod(other) {
+    return new Tensor(this._napi_tensor.mod(other._napi_tensor))
+  }
+
+  bitwiseAnd(other) {
+    return new Tensor(this._napi_tensor.bitwiseAnd(other._napi_tensor))
+  }
+
+  bitwiseOr(other) {
+    return new Tensor(this._napi_tensor.bitwiseOr(other._napi_tensor))
+  }
+
+  bitwiseXor(other) {
+    return new Tensor(this._napi_tensor.bitwiseXor(other._napi_tensor))
+  }
+
+  lShift(other) {
+    return new Tensor(this._napi_tensor.lShift(other._napi_tensor))
+  }
+
+  rShift(other) {
+    return new Tensor(this._napi_tensor.rShift(other._napi_tensor))
+  }
+
+  minimum(other) {
+    return new Tensor(this._napi_tensor.minimum(other._napi_tensor))
+  }
+
+  maximum(other) {
+    return new Tensor(this._napi_tensor.maximum(other._napi_tensor))
+  }
+
+  power(other) {
+    return new Tensor(this._napi_tensor.power(other._napi_tensor))
+  }
+
+  pow(other) {
+    return new Tensor(this._napi_tensor.power(other._napi_tensor))
+  }
+
+  matmul(other) {
+    return new Tensor(this._napi_tensor.matmul(other._napi_tensor))
+  }
+
+  mm(other) {
+    return new Tensor(this._napi_tensor.matmul(other._napi_tensor))
+  }
+
+  conv2d(weights, sx, sy, px, py, dx, dy, groups) {
+    return new Tensor(
+      this._napi_tensor.conv2d(weights._napi_tensor, sx, sy, px, py, dx, dy, groups)
+    )
+  }
 }
 
 module.exports = { Tensor, dtype }

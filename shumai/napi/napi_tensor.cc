@@ -559,6 +559,995 @@ Napi::Value Tensor::Reshape(const Napi::CallbackInfo& info) {
   return wrappedTensor;
 }
 
+Napi::Value Tensor::AsType(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 1 || !info[0].IsNumber()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `astype` expects exactly 1 arg; "
+                         "(expected type `number[]`)...")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  auto dtype = static_cast<fl::dtype>(info[0].As<Napi::Number>().Int32Value());
+  auto t = this->_tensor->astype(dtype);
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Transpose(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 1 || !info[0].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `transpose` expects exactly 1 arg; "
+                         "(expected type `number[]`)...")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  Napi::Array axes_arg = info[0].As<Napi::Array>();
+
+  std::vector<long long> axes =
+      jsArrayArg(axes_arg, g_row_major, this->_tensor->ndim(), env);
+
+  fl::Tensor t;
+  t = fl::transpose(*(this->_tensor), fl::Shape(axes));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Tile(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 1 || !info[0].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `tile` expects exactly 1 arg; "
+                         "(expected type `number[]`)...")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  Napi::Array shape_arg = info[0].As<Napi::Array>();
+  std::vector<long long> shape = jsArrayArg(shape_arg, g_row_major, false, env);
+  fl::Tensor t;
+  t = fl::tile(*(this->_tensor), fl::Shape(shape));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::NonZero(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::nonzero(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Negative(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::negative(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::LogicalNot(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::logicalNot(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Exp(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::exp(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Log(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::log(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Log1p(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::log1p(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Sin(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::sin(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Cos(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::cos(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Sqrt(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::sqrt(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Tanh(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::tanh(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Floor(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::floor(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Ceil(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::ceil(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Rint(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::rint(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Absolute(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::absolute(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Sigmoid(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::sigmoid(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Erf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::erf(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Flip(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 1 || !info[0].IsNumber()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `flip` expects exactly 1 arg, (arg "
+                         "`dim` of type `number`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  uint32_t dim = info[0].As<Napi::Number>().Uint32Value();
+  fl::Tensor t;
+  t = fl::flip(*(this->_tensor), dim);
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Clip(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 2 || (!info[0].IsObject() || !info[1].IsObject())) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `clip` expects exactly 2 args, each of type `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object low_obj = info[0].As<Napi::Object>();
+  Napi::Object high_obj = info[1].As<Napi::Object>();
+  if (low_obj.InstanceOf(Tensor::constructor->Value()) &&
+      high_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* low_tensor = Napi::ObjectWrap<Tensor>::Unwrap(low_obj);
+    Tensor* high_tensor = Napi::ObjectWrap<Tensor>::Unwrap(high_obj);
+    t = fl::clip(*(this->_tensor), *(low_tensor->_tensor),
+                 *(high_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Roll(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 2 || (!info[0].IsNumber() || !info[1].IsNumber())) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `roll` expects exactly 2 args, each of type `number`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  int shift = static_cast<int>(info[0].As<Napi::Number>().Int64Value());
+  int32_t axis = info[1].As<Napi::Number>().Int32Value();
+  auto used_axis = axisArg(axis, g_row_major, this->_tensor->ndim());
+  t = fl::roll(*(this->_tensor), shift, used_axis);
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::IsNaN(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::isnan(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::IsInf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::isinf(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Sign(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  t = fl::sign(*(this->_tensor));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Tril(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (g_row_major) {
+    t = fl::triu(*(this->_tensor));
+  } else {
+    t = fl::tril(*(this->_tensor));
+  }
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Triu(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (g_row_major) {
+    t = fl::tril(*(this->_tensor));
+  } else {
+    t = fl::triu(*(this->_tensor));
+  }
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Where(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 2 || (!info[0].IsObject() || !info[1].IsObject())) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `where` expects exactly 2 args, each of type `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object x_obj = info[0].As<Napi::Object>();
+  Napi::Object y_obj = info[1].As<Napi::Object>();
+  if (x_obj.InstanceOf(Tensor::constructor->Value()) &&
+      y_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* x_tensor = Napi::ObjectWrap<Tensor>::Unwrap(x_obj);
+    Tensor* y_tensor = Napi::ObjectWrap<Tensor>::Unwrap(y_obj);
+    t = fl::where(this->_tensor->astype(fl::dtype::b8), *(x_tensor->_tensor),
+                  *(y_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Sort(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsNumber()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `sort` expects exactly 1 arg (`dim` of type `number`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  int dim = info[0].As<Napi::Number>().Uint32Value();
+  t = fl::sort(*(this->_tensor), dim);
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
+}
+
+Napi::Value Tensor::Add(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `add` expects exactly 1 arg (`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::add(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Sub(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `add` expects exactly 1 arg (`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::sub(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Mul(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `add` expects exactly 1 arg (`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::mul(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Div(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `add` expects exactly 1 arg (`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::div(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Eq(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `add` expects exactly 1 arg (`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::eq(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Neq(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `add` expects exactly 1 arg (`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::neq(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::LessThan(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `lessThan (lt)` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::lessThan(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::LessThanEqual(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `lessThanEqual` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::lessThanEqual(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::GreaterThan(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `greaterThan` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::greaterThan(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::GreaterThanEqual(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "Tensor method `greaterThanEqual` expects exactly 1 arg "
+        "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::greaterThanEqual(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::LogicalOr(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `logicalOr` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::logicalOr(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::LogicalAnd(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `logicalAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::logicalAnd(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Mod(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `mod` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::mod(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::BitwiseAnd(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::bitwiseAnd(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::BitwiseOr(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::bitwiseOr(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::BitwiseXor(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::bitwiseXor(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::LShift(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::lShift(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::RShift(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::rShift(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Minimum(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::minimum(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Maximum(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::maximum(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Power(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    t = fl::power(*(this->_tensor), *(other_tensor->_tensor));
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::MatMul(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() != 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `bitwiseAnd` expects exactly 1 arg "
+                         "(`other` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object other_obj = info[0].As<Napi::Object>();
+  if (other_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* other_tensor = Napi::ObjectWrap<Tensor>::Unwrap(other_obj);
+    fl::Tensor t;
+    if (g_row_major) {
+      t = fl::matmul(*(other_tensor->_tensor), *(this->_tensor));
+    } else {
+      t = fl::matmul(*(this->_tensor), *(other_tensor->_tensor));
+    }
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+Napi::Value Tensor::Conv2d(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() >= 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `conv2d` expects minimum 1 arg "
+                         "(`weights` of type `Tensor`)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  int32_t sx, sy, px, py, dx, dy, groups;
+  if (info.Length() >= 2 && info[1].IsNumber()) {
+    sx = info[1].As<Napi::Number>().Int32Value();
+  } else {
+    sx = 1;
+  }
+  if (info.Length() >= 3 && info[2].IsNumber()) {
+    sy = info[2].As<Napi::Number>().Int32Value();
+  } else {
+    sy = 1;
+  }
+  if (info.Length() >= 4 && info[3].IsNumber()) {
+    px = info[3].As<Napi::Number>().Int32Value();
+  } else {
+    px = 0;
+  }
+  if (info.Length() >= 5 && info[4].IsNumber()) {
+    py = info[4].As<Napi::Number>().Int32Value();
+  } else {
+    py = 0;
+  }
+  if (info.Length() >= 6 && info[5].IsNumber()) {
+    dx = info[5].As<Napi::Number>().Int32Value();
+  } else {
+    dx = 1;
+  }
+  if (info.Length() >= 7 && info[6].IsNumber()) {
+    dy = info[6].As<Napi::Number>().Int32Value();
+  } else {
+    dy = 1;
+  }
+  if (info.Length() >= 8 && info[7].IsNumber()) {
+    groups = info[7].As<Napi::Number>().Int32Value();
+  } else {
+    groups = 1;
+  }
+  Napi::Object weights_obj = info[0].As<Napi::Object>();
+  if (weights_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* weights_tensor = Napi::ObjectWrap<Tensor>::Unwrap(weights_obj);
+    fl::Tensor t;
+    t = fl::conv2d(*(this->_tensor), *(weights_tensor->_tensor), sx, sy, px, py,
+                   dx, dy, groups);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
 // define the `Tensor` class NAPI export
 Napi::FunctionReference* Tensor::constructor;
 Napi::Function Tensor::GetClass(Napi::Env env) {
@@ -587,6 +1576,58 @@ Napi::Function Tensor::GetClass(Napi::Env env) {
           Tensor::InstanceMethod("toBigUint64Array", &Tensor::ToBigUint64Array),
           Tensor::InstanceMethod("dispose", &Tensor::Dispose),
           Tensor::InstanceMethod("reshape", &Tensor::Reshape),
+          Tensor::InstanceMethod("astype", &Tensor::AsType),
+          Tensor::InstanceMethod("transpose", &Tensor::Transpose),
+          Tensor::InstanceMethod("tile", &Tensor::Tile),
+          Tensor::InstanceMethod("nonzero", &Tensor::NonZero),
+          Tensor::InstanceMethod("negative", &Tensor::Negative),
+          Tensor::InstanceMethod("logicalNot", &Tensor::LogicalNot),
+          Tensor::InstanceMethod("exp", &Tensor::Exp),
+          Tensor::InstanceMethod("log", &Tensor::Log),
+          Tensor::InstanceMethod("log1p", &Tensor::Log1p),
+          Tensor::InstanceMethod("sin", &Tensor::Sin),
+          Tensor::InstanceMethod("cos", &Tensor::Cos),
+          Tensor::InstanceMethod("sqrt", &Tensor::Sqrt),
+          Tensor::InstanceMethod("tanh", &Tensor::Tanh),
+          Tensor::InstanceMethod("floor", &Tensor::Floor),
+          Tensor::InstanceMethod("ceil", &Tensor::Ceil),
+          Tensor::InstanceMethod("rint", &Tensor::Rint),
+          Tensor::InstanceMethod("absolute", &Tensor::Absolute),
+          Tensor::InstanceMethod("sigmoid", &Tensor::Sigmoid),
+          Tensor::InstanceMethod("erf", &Tensor::Erf),
+          Tensor::InstanceMethod("flip", &Tensor::Flip),
+          Tensor::InstanceMethod("clip", &Tensor::Clip),
+          Tensor::InstanceMethod("roll", &Tensor::Roll),
+          Tensor::InstanceMethod("isnan", &Tensor::IsNaN),
+          Tensor::InstanceMethod("isinf", &Tensor::IsInf),
+          Tensor::InstanceMethod("sign", &Tensor::Sign),
+          Tensor::InstanceMethod("tril", &Tensor::Tril),
+          Tensor::InstanceMethod("triu", &Tensor::Triu),
+          Tensor::InstanceMethod("where", &Tensor::Where),
+          Tensor::InstanceMethod("sort", &Tensor::Sort),
+          Tensor::InstanceMethod("add", &Tensor::Add),
+          Tensor::InstanceMethod("sub", &Tensor::Sub),
+          Tensor::InstanceMethod("mul", &Tensor::Mul),
+          Tensor::InstanceMethod("div", &Tensor::Div),
+          Tensor::InstanceMethod("eq", &Tensor::Eq),
+          Tensor::InstanceMethod("neq", &Tensor::Neq),
+          Tensor::InstanceMethod("lessThan", &Tensor::LessThan),
+          Tensor::InstanceMethod("lessThanEqual", &Tensor::LessThanEqual),
+          Tensor::InstanceMethod("greaterThan", &Tensor::GreaterThan),
+          Tensor::InstanceMethod("greaterThanEqual", &Tensor::GreaterThanEqual),
+          Tensor::InstanceMethod("logicalOr", &Tensor::LogicalOr),
+          Tensor::InstanceMethod("logicalAnd", &Tensor::LogicalAnd),
+          Tensor::InstanceMethod("mod", &Tensor::Mod),
+          Tensor::InstanceMethod("bitwiseAnd", &Tensor::BitwiseAnd),
+          Tensor::InstanceMethod("bitwiseOr", &Tensor::BitwiseOr),
+          Tensor::InstanceMethod("bitwiseXor", &Tensor::BitwiseXor),
+          Tensor::InstanceMethod("lShift", &Tensor::LShift),
+          Tensor::InstanceMethod("rShift", &Tensor::RShift),
+          Tensor::InstanceMethod("minimum", &Tensor::Minimum),
+          Tensor::InstanceMethod("maximum", &Tensor::Maximum),
+          Tensor::InstanceMethod("power", &Tensor::Power),
+          Tensor::InstanceMethod("matmul", &Tensor::MatMul),
+          Tensor::InstanceMethod("conv2d", &Tensor::Conv2d),
       });
 
   constructor = new Napi::FunctionReference();
