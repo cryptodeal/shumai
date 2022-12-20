@@ -36,13 +36,13 @@ std::vector<long long> jsArrayArg(Napi::Array arr,
   for (size_t i = 0; i < len; ++i) {
     const auto idx = reverse ? len - i - 1 : i;
     Napi::Value val = arr[idx];
-    if (val.IsObject()) {
-      if (!val.IsNumber()) {
-        Napi::TypeError::New(env, "jsArrayArg requires `number[]`")
-            .ThrowAsJavaScriptException();
-        return out;
-      }
-      auto v = val.As<Napi::Number>().Int64Value();
+    if (!val.IsNumber()) {
+      Napi::TypeError::New(env, "jsArrayArg requires `number[]`")
+          .ThrowAsJavaScriptException();
+      return out;
+    } else {
+      int64_t v = val.As<Napi::Number>().Int64Value();
+      std::cout << v << std::endl;
       if (invert && v < 0) {
         v = -v - 1;
       } else if (invert) {
@@ -167,14 +167,21 @@ Tensor::Tensor(const Napi::CallbackInfo& info) : ObjectWrap(info) {
     return;
   }
 
+  if (info[0].IsExternal()) {
+    auto tensor = info[0].As<Napi::External<fl::Tensor>>();
+    this->_tensor = tensor.Data();
+  }
+
   // TODO: handle `arg instanceof Tensor`
-  if (info[0].ToObject().InstanceOf(Tensor::GetClass(env))) {
+  if (info[0].IsObject()) {
     Napi::Object obj = info[0].As<Napi::Object>();
-    Tensor* t = Napi::ObjectWrap<Tensor>::Unwrap(obj);
-    this->_underlying = t->_underlying;
-    this->_tensor = t->_tensor;
-    // TODO: finish handling this case
-    return;
+    if (obj.InstanceOf(Tensor::constructor->Value())) {
+      Tensor* t = Napi::ObjectWrap<Tensor>::Unwrap(obj);
+      this->_underlying = t->_underlying;
+      this->_tensor = t->_tensor;
+      // TODO: finish handling this case
+      return;
+    }
   }
 
   // TODO: handle `typeof arg === 'string
@@ -532,23 +539,30 @@ void Tensor::Dispose(const Napi::CallbackInfo& info) {
   fl::detail::releaseAdapterUnsafe(tensor);
 }
 
-void Tensor::Reshape(const Napi::CallbackInfo& info) {
+Napi::Value Tensor::Reshape(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   if (info.Length() != 1 || !info[0].IsArray()) {
     Napi::TypeError::New(info.Env(),
                          "Tensor method `reshape` expects exactly 1 arg; "
                          "(expected type `number[]`)...")
         .ThrowAsJavaScriptException();
-    return;
+    return env.Null();
   }
   std::vector<long long> shape =
       jsArrayArg(info[0].As<Napi::Array>(), g_row_major, false, env);
-  fl::reshape(*(this->_tensor), fl::Shape(shape));
+  fl::Tensor t;
+  t = fl::reshape(*(this->_tensor), fl::Shape(shape));
+  g_bytes_used += t.bytes();
+  auto* tensor = new fl::Tensor(t);
+  auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+  Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+  return wrappedTensor;
 }
 
 // define the `Tensor` class NAPI export
+Napi::FunctionReference* Tensor::constructor;
 Napi::Function Tensor::GetClass(Napi::Env env) {
-  return DefineClass(
+  Napi::Function func = DefineClass(
       env, "Tensor",
       {
           Tensor::InstanceMethod("elements", &Tensor::Elements),
@@ -574,6 +588,10 @@ Napi::Function Tensor::GetClass(Napi::Env env) {
           Tensor::InstanceMethod("dispose", &Tensor::Dispose),
           Tensor::InstanceMethod("reshape", &Tensor::Reshape),
       });
+
+  constructor = new Napi::FunctionReference();
+  *constructor = Napi::Persistent(func);  // <-- and here
+  return func;
 }
 
 // define NAPI exports (class, functions, etc)

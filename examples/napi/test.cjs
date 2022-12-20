@@ -35,9 +35,8 @@ console.log(example.toUint32Array()) // Uint32Array(4) [ 100, 29, 1, 4 ]
 console.log(example.toBigUint64Array()) // BigUint64Array(4) [ 100n, 29n, 1n, 4n ]
 example.eval()
 console.log(bytesUsed()) // 16
-// TODO: fix, throws AF error
-// example.reshape([2, 2])
-// console.log(example.shape)
+const test2 = example.reshape([2, 2])
+console.log(test2.shape)
 example.dispose()
 console.log(bytesUsed()) // 0
 console.log(dtype.Float32) // 1

@@ -147,7 +147,7 @@ class Tensor {
   }
 
   reshape(shape) {
-    return this._napi_tensor.reshape(shape)
+    return new Tensor(this._napi_tensor.reshape(shape))
   }
 }
 

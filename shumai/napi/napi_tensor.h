@@ -17,7 +17,7 @@
 class Tensor : public Napi::ObjectWrap<Tensor> {
  public:
   Tensor(const Napi::CallbackInfo&);
-  static Napi::FunctionReference constructor;
+  static Napi::FunctionReference* constructor;
   fl::Tensor* _tensor;
 
   Napi::Value Elements(const Napi::CallbackInfo&);
@@ -41,7 +41,7 @@ class Tensor : public Napi::ObjectWrap<Tensor> {
   void Update(const Napi::CallbackInfo&);
   void Eval(const Napi::CallbackInfo& info);
   void Save(const Napi::CallbackInfo& info);
-  void Reshape(const Napi::CallbackInfo& info);
+  Napi::Value Reshape(const Napi::CallbackInfo& info);
 
   static Napi::Function GetClass(Napi::Env);
 
