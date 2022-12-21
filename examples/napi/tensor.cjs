@@ -1,3 +1,4 @@
+import { median } from '@shumai/shumai'
 const {
   Tensor: _Tensor,
   dtypeFloat32,
@@ -67,7 +68,22 @@ const {
   _minimum,
   _maximum,
   _power,
-  _matmul
+  _matmul,
+  _conv2d,
+  _amin,
+  _amax,
+  _argmin,
+  _argmax,
+  _sum,
+  _cumsum,
+  _mean,
+  _median,
+  _var,
+  _std,
+  _norm,
+  _countNonzero,
+  _any,
+  _all
 } = require('../../build/Release/flashlight_napi_bindings')
 
 const dtype = {
@@ -789,6 +805,76 @@ const mm = (tensor, other) => {
   return new Tensor(_matmul(tensor._napi_tensor, other._napi_tensor))
 }
 
+const conv2d = (tensor, weights, sx, sy, px, py, dx, dy, groups) => {
+  return new Tensor(
+    _conv2d(tensor._napi_tensor, weights._napi_tensor, sx, sy, px, py, dx, dy, groups)
+  )
+}
+
+const amin = (tensor, axes, keep_dims) => {
+  return new Tensor(_amin(tensor._napi_tensor, axes, keep_dims))
+}
+
+const amax = (tensor, axes, keep_dims) => {
+  return new Tensor(_amax(tensor._napi_tensor, axes, keep_dims))
+}
+
+const argmin = (tensor, axis, keep_dims) => {
+  return new Tensor(_argmin(tensor._napi_tensor, axis, keep_dims))
+}
+
+const argmax = (tensor, axis, keep_dims) => {
+  return new Tensor(_argmax(tensor._napi_tensor, axis, keep_dims))
+}
+
+const sum = (tensor, axes, keep_dims) => {
+  return new Tensor(_sum(tensor._napi_tensor, axes, keep_dims))
+}
+
+const cumsum = (tensor, axis) => {
+  return new Tensor(_cumsum(tensor._napi_tensor, axis))
+}
+
+const mean = (tensor, axes, keep_dims) => {
+  return new Tensor(_mean(tensor._napi_tensor, axes, keep_dims))
+}
+
+const median = (tensor, axes, keep_dims) => {
+  return new Tensor(_median(tensor._napi_tensor, axes, keep_dims))
+}
+
+const _var = (tensor, axes, bias, keepdims) => {
+  return new Tensor(_var(tensor._napi_tensor, axes, bias, keepdims))
+}
+
+const variance = (tensor, axes, bias, keepdims) => {
+  return new Tensor(_var(tensor._napi_tensor, axes, bias, keepdims))
+}
+
+const std = (tensor, axes, keepdims) => {
+  return new Tensor(_std(tensor._napi_tensor, axes, keepdims))
+}
+
+const norm = (tensor, axes, p, keepdims) => {
+  return new Tensor(_norm(tensor._napi_tensor, axes, p, keepdims))
+}
+
+const normalize = (tensor, axes, p, keepdims) => {
+  return new Tensor(_norm(tensor._napi_tensor, axes, p, keepdims))
+}
+
+const countNonzero = (tensor, axes, keepdims) => {
+  return new Tensor(_countNonzero(tensor._napi_tensor, axes, keepdims))
+}
+
+const any = (tensor, axes, keepdims) => {
+  return new Tensor(_any(tensor._napi_tensor, axes, keepdims))
+}
+
+const all = (tensor, axes, keepdims) => {
+  return new Tensor(_all(tensor._napi_tensor, axes, keepdims))
+}
+
 module.exports = {
   Tensor,
   dtype,
@@ -860,5 +946,22 @@ module.exports = {
   power,
   pow,
   matmul,
-  mm
+  mm,
+  conv2d,
+  amin,
+  amax,
+  argmin,
+  argmax,
+  sum,
+  cumsum,
+  mean,
+  median,
+  _var,
+  variance,
+  std,
+  norm,
+  normalize,
+  countNonzero,
+  any,
+  all
 }

@@ -1787,6 +1787,854 @@ static Napi::Value MatMul(const Napi::CallbackInfo& info) {
   return env.Null();
 }
 
+static Napi::Value Conv2d(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  fl::Tensor t;
+  if (info.Length() >= 2 || (!info[0].IsObject() || !info[1].IsObject())) {
+    Napi::TypeError::New(info.Env(),
+                         "Tensor method `conv2d` expects minimum 2 args "
+                         "both of type Tensor")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  int32_t sx, sy, px, py, dx, dy, groups;
+  if (info.Length() >= 3 && info[2].IsNumber()) {
+    sx = info[2].As<Napi::Number>().Int32Value();
+  } else {
+    sx = 1;
+  }
+  if (info.Length() >= 4 && info[3].IsNumber()) {
+    sy = info[3].As<Napi::Number>().Int32Value();
+  } else {
+    sy = 1;
+  }
+  if (info.Length() >= 5 && info[4].IsNumber()) {
+    px = info[4].As<Napi::Number>().Int32Value();
+  } else {
+    px = 0;
+  }
+  if (info.Length() >= 6 && info[5].IsNumber()) {
+    py = info[5].As<Napi::Number>().Int32Value();
+  } else {
+    py = 0;
+  }
+  if (info.Length() >= 7 && info[6].IsNumber()) {
+    dx = info[6].As<Napi::Number>().Int32Value();
+  } else {
+    dx = 1;
+  }
+  if (info.Length() >= 8 && info[7].IsNumber()) {
+    dy = info[7].As<Napi::Number>().Int32Value();
+  } else {
+    dy = 1;
+  }
+  if (info.Length() >= 9 && info[8].IsNumber()) {
+    groups = info[8].As<Napi::Number>().Int32Value();
+  } else {
+    groups = 1;
+  }
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  Napi::Object weights_obj = info[1].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value()) &&
+      weights_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    Tensor* weights_tensor = Napi::ObjectWrap<Tensor>::Unwrap(weights_obj);
+    fl::Tensor t;
+    t = fl::conv2d(*(parsed_tensor->_tensor), *(weights_tensor->_tensor), sx,
+                   sy, px, py, dx, dy, groups);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value AMin(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`amin` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(), "`amin` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`amin` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`amin` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::amin(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value AMax(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`amax` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(), "`amax` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`amax` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`amax` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::amax(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value ArgMin(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`argmin` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(), "`argmin` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsNumber()) {
+    Napi::TypeError::New(info.Env(),
+                         "`argmin` expects 2nd argument to be typeof `number`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`argmin` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  uint32_t axis = info[1].As<Napi::Number>().Uint32Value();
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto used_axis = axisArg(axis, g_row_major, parsed_tensor->_tensor->ndim());
+    fl::Tensor t;
+    t = fl::argmin(*(parsed_tensor->_tensor), used_axis, keep_dims);
+    auto axes_set = std::unordered_set<int>{static_cast<int>(used_axis)};
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value ArgMax(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`argmax` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(), "`argmax` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsNumber()) {
+    Napi::TypeError::New(info.Env(),
+                         "`argmax` expects 2nd argument to be typeof `number`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`argmax` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  uint32_t axis = info[1].As<Napi::Number>().Uint32Value();
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto used_axis = axisArg(axis, g_row_major, parsed_tensor->_tensor->ndim());
+    fl::Tensor t;
+    t = fl::argmax(*(parsed_tensor->_tensor), used_axis, keep_dims);
+    auto axes_set = std::unordered_set<int>{static_cast<int>(used_axis)};
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value Sum(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`sum` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "`sum` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`sum` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`sum` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::sum(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value CumSum(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 2) {
+    Napi::TypeError::New(info.Env(), "`cumsum` expects exactly 2 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(), "`cumsum` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsNumber()) {
+    Napi::TypeError::New(info.Env(),
+                         "`cumsum` expects 2nd argument to be typeof `number`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  uint32_t axis = info[1].As<Napi::Number>().Uint32Value();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto used_axis = axisArg(axis, g_row_major, parsed_tensor->_tensor->ndim());
+    fl::Tensor t;
+    t = fl::cumsum(*(parsed_tensor->_tensor), used_axis);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value Mean(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`mean` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(), "`mean` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`mean` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`mean` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::mean(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value Median(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`median` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(), "`median` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(
+        info.Env(), "`median` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`median` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::median(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value Var(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 4) {
+    Napi::TypeError::New(info.Env(), "`var` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "`var` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`var` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`var` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[3].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`var` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  bool bias = info[2].As<Napi::Boolean>().Value();
+  bool keep_dims = info[3].As<Napi::Boolean>().Value();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::var(*(parsed_tensor->_tensor), axes, bias, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value Std(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`std` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "`std` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`std` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`std` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::std(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value Norm(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 4) {
+    Napi::TypeError::New(info.Env(), "`norm` expects exactly 4 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(), "`norm` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`norm` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsNumber()) {
+    Napi::TypeError::New(info.Env(),
+                         "`norm` expects 3rd argument to be typeof `number`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[3].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`norm` expects 4th argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  double p = info[2].As<Napi::Number>().DoubleValue();
+  bool keep_dims = info[3].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::norm(*(parsed_tensor->_tensor), axes, p, keep_dims);
+    if (p == std::numeric_limits<double>::infinity()) {
+      t = fl::abs(*(parsed_tensor->_tensor));
+      t = fl::amax(t, axes, keep_dims);
+    }
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value CountNonZero(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`countNonzero` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "`countNonzero` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "`countNonzero` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(
+        info.Env(),
+        "`countNonzero` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::countNonzero(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value Any(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`any` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "`any` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`any` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`any` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::any(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
+static Napi::Value All(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (info.Length() != 3) {
+    Napi::TypeError::New(info.Env(), "`all` expects exactly 3 args")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(info.Env(),
+                         "`all` expects 1st argument to be instanceof `Tensor`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[1].IsArray()) {
+    Napi::TypeError::New(info.Env(),
+                         "`all` expects 2nd argument to be typeof `number[]`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  if (!info[2].IsBoolean()) {
+    Napi::TypeError::New(info.Env(),
+                         "`all` expects 3rd argument to be typeof `boolean`")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  bool keep_dims = info[2].As<Napi::Boolean>().Value();
+  Napi::Object tensor_obj = info[0].As<Napi::Object>();
+  if (tensor_obj.InstanceOf(Tensor::constructor->Value())) {
+    Tensor* parsed_tensor = Napi::ObjectWrap<Tensor>::Unwrap(tensor_obj);
+    auto axes = jsArrayArg<int>(info[1].As<Napi::Array>(), g_row_major,
+                                parsed_tensor->_tensor->ndim(), env);
+    fl::Tensor t;
+    t = fl::all(*(parsed_tensor->_tensor), axes, keep_dims);
+    auto axes_set = std::unordered_set<int>(axes.begin(), axes.end());
+    auto base_shape = parsed_tensor->_tensor->shape().get();
+    std::vector<fl::Dim> new_shape;
+    for (size_t idx = 0; idx < base_shape.size(); ++idx) {
+      if (axes_set.count(idx) || (axes_set.size() == 0)) {
+        if (keep_dims) {
+          new_shape.emplace_back(1);
+        }
+        continue;
+      }
+      new_shape.emplace_back(base_shape[idx]);
+    }
+    const auto& shape = fl::Shape(new_shape);
+    t = fl::reshape(t, shape);
+    g_bytes_used += t.bytes();
+    auto* tensor = new fl::Tensor(t);
+    auto wrapped = Napi::External<fl::Tensor>::New(env, tensor);
+    Napi::Value wrappedTensor = Tensor::constructor->New({wrapped});
+    return wrappedTensor;
+  }
+  return env.Null();
+}
+
 // tensor class constructor
 Tensor::Tensor(const Napi::CallbackInfo& info) : ObjectWrap(info) {
   Napi::Env env = info.Env();
@@ -1812,6 +2660,7 @@ Tensor::Tensor(const Napi::CallbackInfo& info) : ObjectWrap(info) {
       Tensor* t = Napi::ObjectWrap<Tensor>::Unwrap(obj);
       this->_underlying = t->_underlying;
       this->_tensor = t->_tensor;
+
       // TODO: finish handling this case
       return;
     }
@@ -4072,7 +4921,27 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, Power));
   exports.Set(Napi::String::New(env, "_matmul"),
               Napi::Function::New(env, MatMul));
-
+  exports.Set(Napi::String::New(env, "_conv2d"),
+              Napi::Function::New(env, Conv2d));
+  exports.Set(Napi::String::New(env, "_amin"), Napi::Function::New(env, AMin));
+  exports.Set(Napi::String::New(env, "_amax"), Napi::Function::New(env, AMax));
+  exports.Set(Napi::String::New(env, "_argmin"),
+              Napi::Function::New(env, ArgMin));
+  exports.Set(Napi::String::New(env, "_argmax"),
+              Napi::Function::New(env, ArgMax));
+  exports.Set(Napi::String::New(env, "_sum"), Napi::Function::New(env, Sum));
+  exports.Set(Napi::String::New(env, "_cumsum"),
+              Napi::Function::New(env, CumSum));
+  exports.Set(Napi::String::New(env, "_mean"), Napi::Function::New(env, Mean));
+  exports.Set(Napi::String::New(env, "_median"),
+              Napi::Function::New(env, Median));
+  exports.Set(Napi::String::New(env, "_var"), Napi::Function::New(env, Var));
+  exports.Set(Napi::String::New(env, "_std"), Napi::Function::New(env, Std));
+  exports.Set(Napi::String::New(env, "_norm"), Napi::Function::New(env, Norm));
+  exports.Set(Napi::String::New(env, "_countNonzero"),
+              Napi::Function::New(env, CountNonZero));
+  exports.Set(Napi::String::New(env, "_any"), Napi::Function::New(env, Any));
+  exports.Set(Napi::String::New(env, "_all"), Napi::Function::New(env, All));
   return exports;
 }
 
