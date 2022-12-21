@@ -1,5 +1,14 @@
-import { median } from '@shumai/shumai'
+import { existsSync } from 'fs'
+import { getStack, Stats, stats } from '../stats'
+import { _tidyTracker, cyrb53 } from '../util'
+
 const {
+  init,
+  bytesUsed: _bytesUsed,
+  setRowMajor,
+  setColMajor,
+  isRowMajor,
+  isColMajor,
   Tensor: _Tensor,
   dtypeFloat32,
   dtypeFloat64,
@@ -86,7 +95,11 @@ const {
   _all
 } = require('../../build/Release/flashlight_napi_bindings')
 
-const dtype = {
+init()
+
+export const bytesUsed = _bytesUsed
+
+export const dtype = {
   Float32: dtypeFloat32(),
   Float64: dtypeFloat64(),
   BoolInt8: dtypeBoolInt8(),
@@ -102,7 +115,26 @@ const dtype = {
   BigUint64: dtypeUint64()
 }
 
-class Tensor {
+export const layout = {
+  isRowMajor,
+  isColMajor,
+  setRowMajor,
+  setColMajor
+}
+
+export class Tensor {
+  private _napi_tensor: any
+  private _underlying: ArrayBuffer
+  private _ptr: number
+  private _deps: Array<Tensor> = []
+  private _checkpoint_file: string
+  private _checkpoint_callback: () => boolean
+  requires_grad = false
+  provenance = null
+  grad: Tensor = null
+  stats: Stats = null
+  op = 'constant'
+
   constructor(obj) {
     if (obj == null) throw new Error('cannot pass `null` to init Tensor')
     this._napi_tensor = new _Tensor(obj)
@@ -231,8 +263,8 @@ class Tensor {
 
   reshape(shape) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('reshape')
     const t = new Tensor(this._napi_tensor.reshape(shape))
     trace && s.stopTrace(trace)
@@ -257,8 +289,8 @@ class Tensor {
 
   transpose(axes) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('transpose')
     const t = new Tensor(this._napi_tensor.transpose(axes))
     trace && s.stopTrace(trace)
@@ -278,8 +310,8 @@ class Tensor {
 
   tile(shape) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('tile')
     const t = new Tensor(this._napi_tensor.tile(shape))
     trace && s.stopTrace(trace)
@@ -299,8 +331,8 @@ class Tensor {
 
   nonzero() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('nonzero')
     const t = new Tensor(this._napi_tensor.nonzero())
     trace && s.stopTrace(trace)
@@ -320,8 +352,8 @@ class Tensor {
 
   negative() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('negative')
     const t = new Tensor(this._napi_tensor.negative())
     trace && s.stopTrace(trace)
@@ -345,8 +377,8 @@ class Tensor {
 
   logicalNot() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('logicalNot')
     const t = new Tensor(this._napi_tensor.logicalNot())
     trace && s.stopTrace(trace)
@@ -366,8 +398,8 @@ class Tensor {
 
   exp() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('exp')
     const t = new Tensor(this._napi_tensor.exp())
     trace && s.stopTrace(trace)
@@ -387,8 +419,8 @@ class Tensor {
 
   log() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('log')
     const t = new Tensor(this._napi_tensor.log())
     trace && s.stopTrace(trace)
@@ -408,8 +440,8 @@ class Tensor {
 
   log1p() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('log1p')
     const t = new Tensor(this._napi_tensor.log1p())
     trace && s.stopTrace(trace)
@@ -429,8 +461,8 @@ class Tensor {
 
   sin() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('sin')
     const t = new Tensor(this._napi_tensor.sin())
     trace && s.stopTrace(trace)
@@ -450,8 +482,8 @@ class Tensor {
 
   cos() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('cos')
     const t = new Tensor(this._napi_tensor.cos())
     trace && s.stopTrace(trace)
@@ -471,8 +503,8 @@ class Tensor {
 
   sqrt() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('sqrt')
     const t = new Tensor(this._napi_tensor.sqrt())
     trace && s.stopTrace(trace)
@@ -492,8 +524,8 @@ class Tensor {
 
   tanh() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('tanh')
     const t = new Tensor(this._napi_tensor.tanh())
     trace && s.stopTrace(trace)
@@ -513,8 +545,8 @@ class Tensor {
 
   floor() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('floor')
     const t = new Tensor(this._napi_tensor.floor())
     trace && s.stopTrace(trace)
@@ -534,8 +566,8 @@ class Tensor {
 
   ceil() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('ceil')
     const t = new Tensor(this._napi_tensor.ceil())
     trace && s.stopTrace(trace)
@@ -555,8 +587,8 @@ class Tensor {
 
   rint() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('rint')
     const t = new Tensor(this._napi_tensor.rint())
     trace && s.stopTrace(trace)
@@ -576,8 +608,8 @@ class Tensor {
 
   absolute() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('absolute')
     const t = new Tensor(this._napi_tensor.absolute())
     trace && s.stopTrace(trace)
@@ -601,8 +633,8 @@ class Tensor {
 
   sigmoid() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('sigmoid')
     const t = new Tensor(this._napi_tensor.sigmoid())
     trace && s.stopTrace(trace)
@@ -622,8 +654,8 @@ class Tensor {
 
   erf() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('erf')
     const t = new Tensor(this._napi_tensor.erf())
     trace && s.stopTrace(trace)
@@ -643,8 +675,8 @@ class Tensor {
 
   flip(dim) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('flip')
     const t = new Tensor(
       this._napi_tensor.flip(dim <= 0 ? 0 : dim >= 0xffffffff ? 0xffffffff : +dim || 0)
@@ -668,8 +700,8 @@ class Tensor {
 
   clip(low, high) {
     const i = [this, low, high]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('clip')
     const t = new Tensor(this._napi_tensor.clip(low._napi_tensor, high._napi_tensor))
     trace && s.stopTrace(trace)
@@ -689,8 +721,8 @@ class Tensor {
 
   roll(shift, axis) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('roll')
     const t = new Tensor(this._napi_tensor.roll(shift | 0, axis | 0))
     trace && s.stopTrace(trace)
@@ -710,8 +742,8 @@ class Tensor {
 
   isnan() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('isnan')
     const t = new Tensor(this._napi_tensor.isnan())
     trace && s.stopTrace(trace)
@@ -731,8 +763,8 @@ class Tensor {
 
   isinf() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('isinf')
     const t = new Tensor(this._napi_tensor.isinf())
     trace && s.stopTrace(trace)
@@ -752,8 +784,8 @@ class Tensor {
 
   sign() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('sign')
     const t = new Tensor(this._napi_tensor.sign())
     trace && s.stopTrace(trace)
@@ -773,8 +805,8 @@ class Tensor {
 
   tril() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('tril')
     const t = new Tensor(this._napi_tensor.tril())
     trace && s.stopTrace(trace)
@@ -794,8 +826,8 @@ class Tensor {
 
   triu() {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('triu')
     const t = new Tensor(this._napi_tensor.triu())
     trace && s.stopTrace(trace)
@@ -836,8 +868,8 @@ class Tensor {
 
   sort(dim) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('sort')
     const t = new Tensor(
       this._napi_tensor.sort(dim <= 0 ? 0 : dim >= 0xffffffff ? 0xffffffff : +dim || 0)
@@ -861,8 +893,8 @@ class Tensor {
 
   add(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('add')
     const t = new Tensor(this._napi_tensor.add(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -882,8 +914,8 @@ class Tensor {
 
   sub(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('sub')
     const t = new Tensor(this._napi_tensor.add(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -903,8 +935,8 @@ class Tensor {
 
   mul(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('mul')
     const t = new Tensor(this._napi_tensor.mul(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -924,8 +956,8 @@ class Tensor {
 
   div(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('div')
     const t = new Tensor(this._napi_tensor.div(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -945,8 +977,8 @@ class Tensor {
 
   eq(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('eq')
     const t = new Tensor(this._napi_tensor.eq(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -966,8 +998,8 @@ class Tensor {
 
   neq(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('neq')
     const t = new Tensor(this._napi_tensor.neq(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -987,8 +1019,8 @@ class Tensor {
 
   lessThan(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('lessThan')
     const t = new Tensor(this._napi_tensor.lessThan(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1012,8 +1044,8 @@ class Tensor {
 
   lessThanEqual(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('lessThanEqual')
     const t = new Tensor(this._napi_tensor.lessThanEqual(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1037,8 +1069,8 @@ class Tensor {
 
   greaterThan(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('greaterThan')
     const t = new Tensor(this._napi_tensor.greaterThan(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1062,8 +1094,8 @@ class Tensor {
 
   greaterThanEqual(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('greaterThanEqual')
     const t = new Tensor(this._napi_tensor.greaterThanEqual(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1087,8 +1119,8 @@ class Tensor {
 
   logicalOr(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('logicalOr')
     const t = new Tensor(this._napi_tensor.logicalOr(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1108,8 +1140,8 @@ class Tensor {
 
   logicalAnd(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('logicalAnd')
     const t = new Tensor(this._napi_tensor.logicalAnd(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1129,8 +1161,8 @@ class Tensor {
 
   mod(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('mod')
     const t = new Tensor(this._napi_tensor.mod(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1150,8 +1182,8 @@ class Tensor {
 
   bitwiseAnd(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('bitwiseAnd')
     const t = new Tensor(this._napi_tensor.bitwiseAnd(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1171,8 +1203,8 @@ class Tensor {
 
   bitwiseOr(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('bitwiseOr')
     const t = new Tensor(this._napi_tensor.bitwiseOr(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1192,8 +1224,8 @@ class Tensor {
 
   bitwiseXor(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('bitwiseXor')
     const t = new Tensor(this._napi_tensor.bitwiseXor(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1213,8 +1245,8 @@ class Tensor {
 
   lShift(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('lShift')
     const t = new Tensor(this._napi_tensor.lShift(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1234,8 +1266,8 @@ class Tensor {
 
   rShift(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('rShift')
     const t = new Tensor(this._napi_tensor.rShift(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1255,8 +1287,8 @@ class Tensor {
 
   minimum(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('minimum')
     const t = new Tensor(this._napi_tensor.minimum(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1276,8 +1308,8 @@ class Tensor {
 
   maximum(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('maximum')
     const t = new Tensor(this._napi_tensor.maximum(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1297,8 +1329,8 @@ class Tensor {
 
   power(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('power')
     const t = new Tensor(this._napi_tensor.power(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1322,8 +1354,8 @@ class Tensor {
 
   matmul(tensor) {
     const i = [this, tensor]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('matmul')
     const t = new Tensor(this._napi_tensor.matmul(tensor._napi_tensor))
     trace && s.stopTrace(trace)
@@ -1347,8 +1379,8 @@ class Tensor {
 
   conv2d(weights, sx = 1, sy = 1, px = 0, py = 0, dx = 1, dy = 1, groups = 1) {
     const i = [this, weights]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('conv2d')
     const t = new Tensor(
       this._napi_tensor.conv2d(
@@ -1381,8 +1413,8 @@ class Tensor {
 
   amin(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('amin')
     const t = new Tensor(this._napi_tensor.amin(axes, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1402,8 +1434,8 @@ class Tensor {
 
   amax(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('amax')
     const t = new Tensor(this._napi_tensor.amax(axes, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1423,8 +1455,8 @@ class Tensor {
 
   argmin(axis, keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('argmin')
     const t = new Tensor(this._napi_tensor.argmin(axis | 0, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1444,8 +1476,8 @@ class Tensor {
 
   argmax(axis, keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('argmax')
     const t = new Tensor(this._napi_tensor.argmax(axis | 0, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1465,8 +1497,8 @@ class Tensor {
 
   sum(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('sum')
     const t = new Tensor(this._napi_tensor.sum(axes, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1486,8 +1518,8 @@ class Tensor {
 
   cumsum(axis) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('cumsum')
     const t = new Tensor(this._napi_tensor.cumsum(axis | 0))
     trace && s.stopTrace(trace)
@@ -1507,8 +1539,8 @@ class Tensor {
 
   mean(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('mean')
     const t = new Tensor(this._napi_tensor.mean(axes, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1528,8 +1560,8 @@ class Tensor {
 
   median(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('median')
     const t = new Tensor(this._napi_tensor.mean(axes, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1549,8 +1581,8 @@ class Tensor {
 
   _var(axes = [], bias = false, keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('var')
     const t = new Tensor(this._napi_tensor._var(axes, !!bias, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1574,8 +1606,8 @@ class Tensor {
 
   std(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('std')
     const t = new Tensor(this._napi_tensor.std(axes, keep_dims))
     trace && s.stopTrace(trace)
@@ -1595,8 +1627,8 @@ class Tensor {
 
   norm(axes = [], p = 2, keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('norm')
     const t = new Tensor(
       this._napi_tensor.norm(axes, p + 0.00000000000001 - 0.00000000000001, !!keep_dims)
@@ -1624,8 +1656,8 @@ class Tensor {
 
   countNonzero(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('countNonzero')
     const t = new Tensor(this._napi_tensor.countNonzero(axes, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1645,8 +1677,8 @@ class Tensor {
 
   any(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('any')
     const t = new Tensor(this._napi_tensor.any(axes, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1666,8 +1698,8 @@ class Tensor {
 
   all(axes = [], keep_dims = false) {
     const i = [this]
-    const ts = i.reduce((s, t) => s || t.stats, void 0)
-    const s = ts || stats
+    const ts = <Stats>i.reduce((s, t) => s || t.stats, void 0)
+    const s = <Stats>(ts || stats)
     const trace = s.enabled && s.startTrace('all')
     const t = new Tensor(this._napi_tensor.all(axes, !!keep_dims))
     trace && s.stopTrace(trace)
@@ -1686,7 +1718,7 @@ class Tensor {
   }
 }
 
-const rand = (shape) => {
+export const rand = (shape) => {
   const i = []
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1707,7 +1739,7 @@ const rand = (shape) => {
   return t
 }
 
-const randn = (shape) => {
+export const randn = (shape) => {
   const i = []
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1727,7 +1759,7 @@ const randn = (shape) => {
   return t
 }
 
-const full = (shape, val) => {
+export const full = (shape, val) => {
   const i = []
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1746,7 +1778,7 @@ const full = (shape, val) => {
   return t
 }
 
-const identity = (dim) => {
+export const identity = (dim) => {
   const i = []
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1766,15 +1798,15 @@ const identity = (dim) => {
   return t
 }
 
-const ident = (dim) => {
+export const ident = (dim) => {
   return new Tensor(identity(dim))
 }
 
-const eye = (dim) => {
+export const eye = (dim) => {
   return new Tensor(identity(dim))
 }
 
-const arange = (start, end, step = 1) => {
+export const arange = (start, end, step = 1) => {
   const i = []
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1794,7 +1826,7 @@ const arange = (start, end, step = 1) => {
   return t
 }
 
-const iota = (dims, tileDims = [1]) => {
+export const iota = (dims, tileDims = [1]) => {
   const i = []
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1814,7 +1846,7 @@ const iota = (dims, tileDims = [1]) => {
   return t
 }
 
-const reshape = (tensor, shape) => {
+export const reshape = (tensor, shape) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1835,7 +1867,7 @@ const reshape = (tensor, shape) => {
   return t
 }
 
-const transpose = (tensor, axes) => {
+export const transpose = (tensor, axes) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1856,7 +1888,7 @@ const transpose = (tensor, axes) => {
   return t
 }
 
-const tile = (tensor, shape) => {
+export const tile = (tensor, shape) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1877,7 +1909,7 @@ const tile = (tensor, shape) => {
   return t
 }
 
-const concatenate = (tensors, axis) => {
+export const concatenate = (tensors, axis) => {
   if (axis < 0) {
     for (let i = 0; i < tensors.length; ++i) {
       if (tensors[i].shape.length === 0) {
@@ -1910,7 +1942,7 @@ const concatenate = (tensors, axis) => {
   return t
 }
 
-const concat = (tensors, axis) => {
+export const concat = (tensors, axis) => {
   return new Tensor(
     concat(
       tensors.map((t) => t._napi_tensor),
@@ -1919,7 +1951,7 @@ const concat = (tensors, axis) => {
   )
 }
 
-const nonzero = (tensor) => {
+export const nonzero = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1940,7 +1972,7 @@ const nonzero = (tensor) => {
   return t
 }
 
-const negative = (tensor) => {
+export const negative = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1961,11 +1993,11 @@ const negative = (tensor) => {
   return t
 }
 
-const negate = (tensor) => {
+export const negate = (tensor) => {
   return new Tensor(negative(tensor._napi_tensor))
 }
 
-const logicalNot = (tensor) => {
+export const logicalNot = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -1986,7 +2018,7 @@ const logicalNot = (tensor) => {
   return t
 }
 
-const exp = (tensor) => {
+export const exp = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2007,7 +2039,7 @@ const exp = (tensor) => {
   return t
 }
 
-const log = (tensor) => {
+export const log = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2028,7 +2060,7 @@ const log = (tensor) => {
   return t
 }
 
-const log1p = (tensor) => {
+export const log1p = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2049,7 +2081,7 @@ const log1p = (tensor) => {
   return t
 }
 
-const sin = (tensor) => {
+export const sin = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2070,7 +2102,7 @@ const sin = (tensor) => {
   return t
 }
 
-const cos = (tensor) => {
+export const cos = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2091,7 +2123,7 @@ const cos = (tensor) => {
   return t
 }
 
-const sqrt = (tensor) => {
+export const sqrt = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2112,7 +2144,7 @@ const sqrt = (tensor) => {
   return t
 }
 
-const tanh = (tensor) => {
+export const tanh = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2133,7 +2165,7 @@ const tanh = (tensor) => {
   return t
 }
 
-const floor = (tensor) => {
+export const floor = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2154,7 +2186,7 @@ const floor = (tensor) => {
   return t
 }
 
-const ceil = (tensor) => {
+export const ceil = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2175,7 +2207,7 @@ const ceil = (tensor) => {
   return t
 }
 
-const rint = (tensor) => {
+export const rint = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2196,7 +2228,7 @@ const rint = (tensor) => {
   return t
 }
 
-const absolute = (tensor) => {
+export const absolute = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2217,11 +2249,11 @@ const absolute = (tensor) => {
   return t
 }
 
-const abs = (tensor) => {
+export const abs = (tensor) => {
   return new Tensor(absolute(tensor._napi_tensor))
 }
 
-const sigmoid = (tensor) => {
+export const sigmoid = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2242,7 +2274,7 @@ const sigmoid = (tensor) => {
   return t
 }
 
-const erf = (tensor) => {
+export const erf = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2263,7 +2295,7 @@ const erf = (tensor) => {
   return t
 }
 
-const flip = (tensor, dim) => {
+export const flip = (tensor, dim) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2288,7 +2320,7 @@ const flip = (tensor, dim) => {
   return t
 }
 
-const clip = (tensor, low, high) => {
+export const clip = (tensor, low, high) => {
   const i = [tensor, low, high]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2309,7 +2341,7 @@ const clip = (tensor, low, high) => {
   return t
 }
 
-const roll = (tensor, shift, axis) => {
+export const roll = (tensor, shift, axis) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2330,7 +2362,7 @@ const roll = (tensor, shift, axis) => {
   return t
 }
 
-const isnan = (tensor) => {
+export const isnan = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2351,7 +2383,7 @@ const isnan = (tensor) => {
   return t
 }
 
-const isinf = (tensor) => {
+export const isinf = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2372,7 +2404,7 @@ const isinf = (tensor) => {
   return t
 }
 
-const sign = (tensor) => {
+export const sign = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2393,7 +2425,7 @@ const sign = (tensor) => {
   return t
 }
 
-const tril = (tensor) => {
+export const tril = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2414,7 +2446,7 @@ const tril = (tensor) => {
   return t
 }
 
-const triu = (tensor) => {
+export const triu = (tensor) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2435,7 +2467,7 @@ const triu = (tensor) => {
   return t
 }
 
-const where = (cond, x, y) => {
+export const where = (cond, x, y) => {
   const i = [cond, x, y]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2456,7 +2488,7 @@ const where = (cond, x, y) => {
   return t
 }
 
-const sort = (tensor, dim) => {
+export const sort = (tensor, dim) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2481,7 +2513,7 @@ const sort = (tensor, dim) => {
   return t
 }
 
-const add = (tensor, other) => {
+export const add = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2502,7 +2534,7 @@ const add = (tensor, other) => {
   return t
 }
 
-const sub = (tensor, other) => {
+export const sub = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2523,7 +2555,7 @@ const sub = (tensor, other) => {
   return t
 }
 
-const mul = (tensor, other) => {
+export const mul = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2544,7 +2576,7 @@ const mul = (tensor, other) => {
   return t
 }
 
-const div = (tensor, other) => {
+export const div = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2564,7 +2596,7 @@ const div = (tensor, other) => {
   return t
 }
 
-const eq = (tensor, other) => {
+export const eq = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2585,7 +2617,7 @@ const eq = (tensor, other) => {
   return t
 }
 
-const neq = (tensor, other) => {
+export const neq = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2606,7 +2638,7 @@ const neq = (tensor, other) => {
   return t
 }
 
-const lessThan = (tensor, other) => {
+export const lessThan = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2627,11 +2659,11 @@ const lessThan = (tensor, other) => {
   return t
 }
 
-const lt = (tensor, other) => {
+export const lt = (tensor, other) => {
   return new Tensor(lessThan(tensor._napi_tensor, other._napi_tensor))
 }
 
-const lessThanEqual = (tensor, other) => {
+export const lessThanEqual = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2652,11 +2684,11 @@ const lessThanEqual = (tensor, other) => {
   return t
 }
 
-const lte = (tensor, other) => {
-  return new Tensor(lessthanEqual(tensor._napi_tensor, other._napi_tensor))
+export const lte = (tensor, other) => {
+  return new Tensor(lessThanEqual(tensor._napi_tensor, other._napi_tensor))
 }
 
-const greaterThan = (tensor, other) => {
+export const greaterThan = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2677,11 +2709,11 @@ const greaterThan = (tensor, other) => {
   return t
 }
 
-const gt = (tensor, other) => {
+export const gt = (tensor, other) => {
   return new Tensor(greaterThan(tensor._napi_tensor, other._napi_tensor))
 }
 
-const greaterThanEqual = (tensor, other) => {
+export const greaterThanEqual = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2702,11 +2734,11 @@ const greaterThanEqual = (tensor, other) => {
   return t
 }
 
-const gte = (tensor, other) => {
+export const gte = (tensor, other) => {
   return new Tensor(greaterThanEqual(tensor._napi_tensor, other._napi_tensor))
 }
 
-const logicalOr = (tensor, other) => {
+export const logicalOr = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2727,7 +2759,7 @@ const logicalOr = (tensor, other) => {
   return t
 }
 
-const logicalAnd = (tensor, other) => {
+export const logicalAnd = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2748,7 +2780,7 @@ const logicalAnd = (tensor, other) => {
   return t
 }
 
-const mod = (tensor, other) => {
+export const mod = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2769,7 +2801,7 @@ const mod = (tensor, other) => {
   return t
 }
 
-const bitwiseAnd = (tensor, other) => {
+export const bitwiseAnd = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2790,7 +2822,7 @@ const bitwiseAnd = (tensor, other) => {
   return t
 }
 
-const bitwiseOr = (tensor, other) => {
+export const bitwiseOr = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2811,7 +2843,7 @@ const bitwiseOr = (tensor, other) => {
   return t
 }
 
-const bitwiseXor = (tensor, other) => {
+export const bitwiseXor = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2832,7 +2864,7 @@ const bitwiseXor = (tensor, other) => {
   return t
 }
 
-const lShift = (tensor, other) => {
+export const lShift = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2853,7 +2885,7 @@ const lShift = (tensor, other) => {
   return t
 }
 
-const rShift = (tensor, other) => {
+export const rShift = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2874,7 +2906,7 @@ const rShift = (tensor, other) => {
   return t
 }
 
-const minimum = (tensor, other) => {
+export const minimum = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2895,7 +2927,7 @@ const minimum = (tensor, other) => {
   return t
 }
 
-const maximum = (tensor, other) => {
+export const maximum = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2916,7 +2948,7 @@ const maximum = (tensor, other) => {
   return t
 }
 
-const power = (tensor, other) => {
+export const power = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2937,11 +2969,11 @@ const power = (tensor, other) => {
   return t
 }
 
-const pow = (tensor, other) => {
+export const pow = (tensor, other) => {
   return new Tensor(power(tensor._napi_tensor, other._napi_tensor))
 }
 
-const matmul = (tensor, other) => {
+export const matmul = (tensor, other) => {
   const i = [tensor, other]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -2962,7 +2994,7 @@ const matmul = (tensor, other) => {
   return t
 }
 
-const mm = (tensor, other) => {
+export const mm = (tensor, other) => {
   return new Tensor(matmul(tensor._napi_tensor, other._napi_tensor))
 }
 
@@ -3001,7 +3033,7 @@ const conv2d = (tensor, weights, sx = 1, sy = 1, px = 0, py = 0, dx = 1, dy = 1,
   return t
 }
 
-const amin = (tensor, axes = [], keep_dims = false) => {
+export const amin = (tensor, axes = [], keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3022,7 +3054,7 @@ const amin = (tensor, axes = [], keep_dims = false) => {
   return t
 }
 
-const amax = (tensor, axes = [], keep_dims = false) => {
+export const amax = (tensor, axes = [], keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3043,7 +3075,7 @@ const amax = (tensor, axes = [], keep_dims = false) => {
   return t
 }
 
-const argmin = (tensor, axis, keep_dims = false) => {
+export const argmin = (tensor, axis, keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3064,7 +3096,7 @@ const argmin = (tensor, axis, keep_dims = false) => {
   return t
 }
 
-const argmax = (tensor, axis, keep_dims = false) => {
+export const argmax = (tensor, axis, keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3085,7 +3117,7 @@ const argmax = (tensor, axis, keep_dims = false) => {
   return t
 }
 
-const sum = (tensor, axes, keep_dims = false) => {
+export const sum = (tensor, axes, keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3106,7 +3138,7 @@ const sum = (tensor, axes, keep_dims = false) => {
   return t
 }
 
-const cumsum = (tensor, axis) => {
+export const cumsum = (tensor, axis) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3127,7 +3159,7 @@ const cumsum = (tensor, axis) => {
   return t
 }
 
-const mean = (tensor, axes = [], keep_dims = false) => {
+export const mean = (tensor, axes = [], keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3148,7 +3180,7 @@ const mean = (tensor, axes = [], keep_dims = false) => {
   return t
 }
 
-const median = (tensor, axes = [], keep_dims = false) => {
+export const median = (tensor, axes = [], keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3169,7 +3201,7 @@ const median = (tensor, axes = [], keep_dims = false) => {
   return t
 }
 
-const _var = (tensor, axes = [], bias = false, keep_dims = false) => {
+export const _var = (tensor, axes = [], bias = false, keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3190,11 +3222,11 @@ const _var = (tensor, axes = [], bias = false, keep_dims = false) => {
   return t
 }
 
-const variance = (tensor, axes = [], bias = false, keep_dims = false) => {
+export const variance = (tensor, axes = [], bias = false, keep_dims = false) => {
   return new Tensor(_var(tensor._napi_tensor, axes, bias, keep_dims))
 }
 
-const std = (tensor, axes = [], keep_dims = false) => {
+export const std = (tensor, axes = [], keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3215,7 +3247,7 @@ const std = (tensor, axes = [], keep_dims = false) => {
   return t
 }
 
-const norm = (tensor, axes = [], p = 2, keep_dims = false) => {
+export const norm = (tensor, axes = [], p = 2, keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3240,11 +3272,11 @@ const norm = (tensor, axes = [], p = 2, keep_dims = false) => {
   return t
 }
 
-const normalize = (tensor, axes = [], p = 2, keep_dims = false) => {
+export const normalize = (tensor, axes = [], p = 2, keep_dims = false) => {
   return new Tensor(norm(tensor._napi_tensor, axes, p, keep_dims))
 }
 
-const countNonzero = (tensor, axes = [], keep_dims = false) => {
+export const countNonzero = (tensor, axes = [], keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3265,7 +3297,7 @@ const countNonzero = (tensor, axes = [], keep_dims = false) => {
   return t
 }
 
-const any = (tensor, axes = [], keep_dims = false) => {
+export const any = (tensor, axes = [], keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3286,7 +3318,7 @@ const any = (tensor, axes = [], keep_dims = false) => {
   return t
 }
 
-const all = (tensor, axes = [], keep_dims = false) => {
+export const all = (tensor, axes = [], keep_dims = false) => {
   const i = [tensor]
   const ts = i.reduce((s, t) => s || t.stats, void 0)
   const s = ts || stats
@@ -3305,95 +3337,4 @@ const all = (tensor, axes = [], keep_dims = false) => {
 
   t.op = 'all'
   return t
-}
-
-module.exports = {
-  Tensor,
-  dtype,
-  rand,
-  randn,
-  full,
-  identity,
-  ident,
-  eye,
-  arange,
-  iota,
-  reshape,
-  transpose,
-  tile,
-  concatenate,
-  concat,
-  nonzero,
-  negative,
-  negate,
-  logicalNot,
-  exp,
-  log,
-  log1p,
-  sin,
-  cos,
-  sqrt,
-  tanh,
-  floor,
-  ceil,
-  rint,
-  absolute,
-  abs,
-  sigmoid,
-  erf,
-  flip,
-  clip,
-  roll,
-  isnan,
-  isinf,
-  sign,
-  tril,
-  triu,
-  where,
-  sort,
-  add,
-  sub,
-  mul,
-  div,
-  eq,
-  neq,
-  lessThan,
-  lt,
-  lessThanEqual,
-  lte,
-  greaterThan,
-  gt,
-  greaterThanEqual,
-  gte,
-  logicalOr,
-  logicalAnd,
-  mod,
-  bitwiseAnd,
-  bitwiseOr,
-  bitwiseXor,
-  lShift,
-  rShift,
-  minimum,
-  maximum,
-  power,
-  pow,
-  matmul,
-  mm,
-  conv2d,
-  amin,
-  amax,
-  argmin,
-  argmax,
-  sum,
-  cumsum,
-  mean,
-  median,
-  _var,
-  variance,
-  std,
-  norm,
-  normalize,
-  countNonzero,
-  any,
-  all
 }

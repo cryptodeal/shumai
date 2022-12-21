@@ -4935,7 +4935,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "_mean"), Napi::Function::New(env, Mean));
   exports.Set(Napi::String::New(env, "_median"),
               Napi::Function::New(env, Median));
-  exports.Set(Napi::String::New(env, "_var"), Napi::Function::New(env, Var));
+  exports.Set(Napi::String::New(env, "_variance"),
+              Napi::Function::New(env, Var));
   exports.Set(Napi::String::New(env, "_std"), Napi::Function::New(env, Std));
   exports.Set(Napi::String::New(env, "_norm"), Napi::Function::New(env, Norm));
   exports.Set(Napi::String::New(env, "_countNonzero"),
