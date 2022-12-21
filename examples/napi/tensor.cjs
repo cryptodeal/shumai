@@ -9,7 +9,65 @@ const {
   dtypeUint8,
   dtypeUint16,
   dtypeUint32,
-  dtypeUint64
+  dtypeUint64,
+  _rand,
+  _randn,
+  _full,
+  _identity,
+  _arange,
+  _iota,
+  _reshape,
+  _transpose,
+  _tile,
+  _concatenate,
+  _nonzero,
+  _negative,
+  _logicalNot,
+  _exp,
+  _log,
+  _log1p,
+  _sin,
+  _cos,
+  _sqrt,
+  _tanh,
+  _floor,
+  _ceil,
+  _rint,
+  _absolute,
+  _sigmoid,
+  _erf,
+  _flip,
+  _clip,
+  _roll,
+  _isnan,
+  _isinf,
+  _sign,
+  _tril,
+  _triu,
+  _where,
+  _sort,
+  _add,
+  _sub,
+  _mul,
+  _div,
+  _eq,
+  _neq,
+  _lessThan,
+  _lessThanEqual,
+  _greaterThan,
+  _greaterThanEqual,
+  _logicalOr,
+  _logicalAnd,
+  _mod,
+  _bitwiseAnd,
+  _bitwiseOr,
+  _bitwiseXor,
+  _lShift,
+  _rShift,
+  _minimum,
+  _maximum,
+  _power,
+  _matmul
 } = require('../../build/Release/flashlight_napi_bindings')
 
 const dtype = {
@@ -445,4 +503,362 @@ class Tensor {
   }
 }
 
-module.exports = { Tensor, dtype }
+const rand = (shape) => {
+  return new Tensor(_rand(shape))
+}
+
+const randn = (shape) => {
+  return new Tensor(_randn(shape))
+}
+
+const full = (shape, val) => {
+  return new Tensor(_full(shape, val))
+}
+
+const identity = (dim) => {
+  return new Tensor(_identity(dim))
+}
+
+const ident = (dim) => {
+  return new Tensor(_identity(dim))
+}
+
+const eye = (dim) => {
+  return new Tensor(_identity(dim))
+}
+
+const arange = (start, end, step) => {
+  return new Tensor(_arange(start, end, step))
+}
+
+const iota = (dims, tileDims) => {
+  return new Tensor(_iota(dims, tileDims))
+}
+
+const reshape = (tensor, shape) => {
+  return new Tensor(_reshape(tensor._napi_tensor, shape))
+}
+
+const transpose = (tensor, axes) => {
+  return new Tensor(_transpose(tensor._napi_tensor, axes))
+}
+
+const tile = (tensor, shape) => {
+  return new Tensor(_tile(tensor._napi_tensor, shape))
+}
+
+const concatenate = (tensors, axis) => {
+  return new Tensor(
+    _concatenate(
+      tensors.map((t) => t._napi_tensor),
+      axis
+    )
+  )
+}
+
+const concat = (tensors, axis) => {
+  return new Tensor(
+    _concatenate(
+      tensors.map((t) => t._napi_tensor),
+      axis
+    )
+  )
+}
+
+const nonzero = (tensor) => {
+  return new Tensor(_nonzero(tensor._napi_tensor))
+}
+
+const negative = (tensor) => {
+  return new Tensor(_negative(tensor._napi_tensor))
+}
+
+const negate = (tensor) => {
+  return new Tensor(_negative(tensor._napi_tensor))
+}
+
+const logicalNot = (tensor) => {
+  return new Tensor(_logicalNot(tensor._napi_tensor))
+}
+
+const exp = (tensor) => {
+  return new Tensor(_exp(tensor._napi_tensor))
+}
+
+const log = (tensor) => {
+  return new Tensor(_log(tensor._napi_tensor))
+}
+
+const log1p = (tensor) => {
+  return new Tensor(_log1p(tensor._napi_tensor))
+}
+
+const sin = (tensor) => {
+  return new Tensor(_sin(tensor._napi_tensor))
+}
+
+const cos = (tensor) => {
+  return new Tensor(_cos(tensor._napi_tensor))
+}
+
+const sqrt = (tensor) => {
+  return new Tensor(_sqrt(tensor._napi_tensor))
+}
+
+const tanh = (tensor) => {
+  return new Tensor(_tanh(tensor._napi_tensor))
+}
+
+const floor = (tensor) => {
+  return new Tensor(_floor(tensor._napi_tensor))
+}
+
+const ceil = (tensor) => {
+  return new Tensor(_ceil(tensor._napi_tensor))
+}
+
+const rint = (tensor) => {
+  return new Tensor(_rint(tensor._napi_tensor))
+}
+
+const absolute = (tensor) => {
+  return new Tensor(_absolute(tensor._napi_tensor))
+}
+
+const abs = (tensor) => {
+  return new Tensor(_absolute(tensor._napi_tensor))
+}
+
+const sigmoid = (tensor) => {
+  return new Tensor(_sigmoid(tensor._napi_tensor))
+}
+
+const erf = (tensor) => {
+  return new Tensor(_erf(tensor._napi_tensor))
+}
+
+const flip = (tensor, dim) => {
+  return new Tensor(_flip(tensor._napi_tensor, dim))
+}
+
+const clip = (tensor, dim) => {
+  return new Tensor(_clip(tensor._napi_tensor, dim))
+}
+
+const roll = (tensor, shift, axis) => {
+  return new Tensor(_roll(tensor._napi_tensor, shift, axis))
+}
+
+const isnan = (tensor) => {
+  return new Tensor(_isnan(tensor._napi_tensor))
+}
+
+const isinf = (tensor) => {
+  return new Tensor(_isinf(tensor._napi_tensor))
+}
+
+const sign = (tensor) => {
+  return new Tensor(_sign(tensor._napi_tensor))
+}
+
+const tril = (tensor) => {
+  return new Tensor(_tril(tensor._napi_tensor))
+}
+
+const triu = (tensor) => {
+  return new Tensor(_triu(tensor._napi_tensor))
+}
+
+const where = (cond, x, y) => {
+  return new Tensor(_where(cond._napi_tensor, x._napi_tensor, y._napi_tensor))
+}
+
+const sort = (tensor, dim) => {
+  return new Tensor(_sort(tensor._napi_tensor, dim))
+}
+
+const add = (tensor, other) => {
+  return new Tensor(_add(tensor._napi_tensor, other._napi_tensor))
+}
+
+const sub = (tensor, other) => {
+  return new Tensor(_sub(tensor._napi_tensor, other._napi_tensor))
+}
+
+const mul = (tensor, other) => {
+  return new Tensor(_mul(tensor._napi_tensor, other._napi_tensor))
+}
+
+const div = (tensor, other) => {
+  return new Tensor(_div(tensor._napi_tensor, other._napi_tensor))
+}
+
+const eq = (tensor, other) => {
+  return new Tensor(_eq(tensor._napi_tensor, other._napi_tensor))
+}
+
+const neq = (tensor, other) => {
+  return new Tensor(_neq(tensor._napi_tensor, other._napi_tensor))
+}
+
+const lessThan = (tensor, other) => {
+  return new Tensor(_lessThan(tensor._napi_tensor, other._napi_tensor))
+}
+
+const lt = (tensor, other) => {
+  return new Tensor(_lessThan(tensor._napi_tensor, other._napi_tensor))
+}
+
+const lessThanEqual = (tensor, other) => {
+  return new Tensor(_lessThanEqual(tensor._napi_tensor, other._napi_tensor))
+}
+
+const lte = (tensor, other) => {
+  return new Tensor(_lessThanEqual(tensor._napi_tensor, other._napi_tensor))
+}
+
+const greaterThan = (tensor, other) => {
+  return new Tensor(_greaterThan(tensor._napi_tensor, other._napi_tensor))
+}
+
+const gt = (tensor, other) => {
+  return new Tensor(_greaterThan(tensor._napi_tensor, other._napi_tensor))
+}
+
+const greaterThanEqual = (tensor, other) => {
+  return new Tensor(_greaterThanEqual(tensor._napi_tensor, other._napi_tensor))
+}
+
+const gte = (tensor, other) => {
+  return new Tensor(_greaterThanEqual(tensor._napi_tensor, other._napi_tensor))
+}
+
+const logicalOr = (tensor, other) => {
+  return new Tensor(_logicalOr(tensor._napi_tensor, other._napi_tensor))
+}
+
+const logicalAnd = (tensor, other) => {
+  return new Tensor(_logicalAnd(tensor._napi_tensor, other._napi_tensor))
+}
+
+const mod = (tensor, other) => {
+  return new Tensor(_mod(tensor._napi_tensor, other._napi_tensor))
+}
+
+const bitwiseAnd = (tensor, other) => {
+  return new Tensor(_bitwiseAnd(tensor._napi_tensor, other._napi_tensor))
+}
+
+const bitwiseOr = (tensor, other) => {
+  return new Tensor(_bitwiseOr(tensor._napi_tensor, other._napi_tensor))
+}
+
+const bitwiseXor = (tensor, other) => {
+  return new Tensor(_bitwiseXor(tensor._napi_tensor, other._napi_tensor))
+}
+
+const lShift = (tensor, other) => {
+  return new Tensor(_lShift(tensor._napi_tensor, other._napi_tensor))
+}
+
+const rShift = (tensor, other) => {
+  return new Tensor(_rShift(tensor._napi_tensor, other._napi_tensor))
+}
+
+const minimum = (tensor, other) => {
+  return new Tensor(_minimum(tensor._napi_tensor, other._napi_tensor))
+}
+
+const maximum = (tensor, other) => {
+  return new Tensor(_maximum(tensor._napi_tensor, other._napi_tensor))
+}
+
+const power = (tensor, other) => {
+  return new Tensor(_power(tensor._napi_tensor, other._napi_tensor))
+}
+
+const pow = (tensor, other) => {
+  return new Tensor(_power(tensor._napi_tensor, other._napi_tensor))
+}
+
+const matmul = (tensor, other) => {
+  return new Tensor(_matmul(tensor._napi_tensor, other._napi_tensor))
+}
+
+const mm = (tensor, other) => {
+  return new Tensor(_matmul(tensor._napi_tensor, other._napi_tensor))
+}
+
+module.exports = {
+  Tensor,
+  dtype,
+  rand,
+  randn,
+  full,
+  identity,
+  ident,
+  eye,
+  arange,
+  iota,
+  reshape,
+  transpose,
+  tile,
+  concatenate,
+  concat,
+  nonzero,
+  negative,
+  negate,
+  logicalNot,
+  exp,
+  log,
+  log1p,
+  sin,
+  cos,
+  sqrt,
+  tanh,
+  floor,
+  ceil,
+  rint,
+  absolute,
+  abs,
+  sigmoid,
+  erf,
+  flip,
+  clip,
+  roll,
+  isnan,
+  isinf,
+  sign,
+  tril,
+  triu,
+  where,
+  sort,
+  add,
+  sub,
+  mul,
+  div,
+  eq,
+  neq,
+  lessThan,
+  lt,
+  lessThanEqual,
+  lte,
+  greaterThan,
+  gt,
+  greaterThanEqual,
+  gte,
+  logicalOr,
+  logicalAnd,
+  mod,
+  bitwiseAnd,
+  bitwiseOr,
+  bitwiseXor,
+  lShift,
+  rShift,
+  minimum,
+  maximum,
+  power,
+  pow,
+  matmul,
+  mm
+}

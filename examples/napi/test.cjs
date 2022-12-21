@@ -6,7 +6,7 @@ const {
   isRowMajor,
   isColMajor
 } = require('../../build/Release/flashlight_napi_bindings.node')
-const { Tensor, dtype } = require('./tensor.cjs')
+const { Tensor, dtype, concatenate } = require('./tensor.cjs')
 
 init()
 console.log(isRowMajor()) // true
@@ -59,3 +59,7 @@ const test4 = new Tensor(new Float32Array([1, 11, 2, 22, 3, 33, 4, 44])).reshape
 const test5 = test4.transpose([1, 0])
 console.log(test5.shape) // [4, 2]
 console.log(test5.toFloat32Array()) // Float32Array(8) [ 1, 3, 11, 33, 2, 4, 22, 44 ]
+const concat1 = new Tensor(new Float32Array([1, 2, 3, 4])),
+  concat2 = new Tensor(new Float32Array([5, 6, 7, 8]))
+const concatTest = concatenate([concat1, concat2], 0)
+console.log(concatTest.toFloat32Array()) // Float32Array(8) [ 1, 2, 3, 4, 5, 6, 7, 8 ]
